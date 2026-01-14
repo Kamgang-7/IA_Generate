@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.venv/
+venv/
+
+# PDF files
+PDF/
+
+# FAISS local storage (if you add this later)
+faiss_index/
+
+# Streamlit
+.streamlit/
