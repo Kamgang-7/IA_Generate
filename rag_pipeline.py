@@ -59,7 +59,11 @@ def initialize_rag_pipeline():
     # 2. Initialiser l'LLM et les Embeddings
     try:
         # Utilisez le nom de modèle qui fonctionne pour vous
-        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", temperature=0.3)
+        llm = ChatGoogleGenerativeAI(
+                    model="gemini-3-flash-preview", 
+                    temperature=0.1, # On baisse un peu la température pour plus de précision
+                    convert_system_message_to_human=True 
+                    ) #gemini-2.5-flash-lite
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     except Exception as e:
         st.error(f"Erreur lors de l'initialisation de Google AI: {e}")

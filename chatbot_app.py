@@ -61,11 +61,23 @@ if prompt := st.chat_input("Posez votre question ici..."):
                     question=prompt
                 )
                 
-                # 6. Générer la réponse (le "G" de RAG)
+                # --- 6. Générer la réponse (le "G" de RAG) ---
                 st.spinner("Génération de la réponse...")
                 response = llm.invoke(final_prompt)
-                answer = response.content
-                
+
+                # --- NOUVELLE LOGIQUE D'EXTRACTION ---
+                # On vérifie si le contenu est une liste (cas du modèle Gemini 3 Preview) 
+                # ou une simple chaîne de caractères.
+                if isinstance(response.content, list):
+                    # On extrait le texte du premier élément de la liste
+                    answer = response.content[0].get('text', '')
+                else:
+                    # Cas classique
+                    answer = response.content
+
+                # On ignore volontairement les 'extras' ou les signatures pour l'affichage
+                # ---------------------------------------
+
                 # 7. Afficher la réponse
                 st.markdown(answer)
                 
