@@ -1,3 +1,13 @@
+---
+title: SmartPDF-RAG
+emoji: 📄
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+app_file: chatbot_app.py
+pinned: false
+---
+
 # 📄 SmartPDF-RAG : Chatbot Intelligent avec Gemini 3
 
 Une application de **RAG (Retrieval-Augmented Generation)** moderne et rapide permettant de discuter avec vos documents PDF en utilisant la puissance de **Google Gemini 3**.
