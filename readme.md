@@ -40,7 +40,7 @@ Créez un fichier .env à la racine :
 ```Plaintext
 GOOGLE_API_KEY="VOTRE_CLE_API_GOOGLE"
 ```
-📂 Utilisation
+## 📂 Utilisation
 
 1. Placez vos fichiers PDF dans le dossier PDF/.
 2. Lancez l'application via uv :
@@ -49,8 +49,8 @@ uv run streamlit run chatbot_app.py
 ```
 3. Posez vos questions ! L'application créera automatiquement un dossier faiss_index/ lors de la première analyse pour accélérer les sessions futures.
 
-📁 Structure du projet
-
+## 📁 Structure du projet
+```Plaintext
 .
 ├── PDF/                 # Vos documents PDF source
 ├── faiss_index/         # Index vectoriel généré localement (ignoré par Git)
@@ -58,3 +58,7 @@ uv run streamlit run chatbot_app.py
 ├── rag_pipeline.py      # Cœur du pipeline RAG
 ├── pyproject.toml       # Configuration et dépendances modernes
 └── uv.lock              # Fichier de verrouillage des versions
+```
+
+## Développements futurs
+à venir ...
