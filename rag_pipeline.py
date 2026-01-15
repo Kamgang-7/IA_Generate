@@ -51,9 +51,13 @@ def initialize_rag_pipeline():
     print("--- INITIALISATION DU PIPELINE RAG (ne devrait s'exécuter qu'une fois) ---")
     load_dotenv()
     
-    # 1. Vérifier la clé API
-    if "GOOGLE_API_KEY" not in os.environ:
-        st.error("Clé API GOOGLE_API_KEY non trouvée. Veuillez l'ajouter à votre fichier .env.")
+    # 1. Vérifier la clé API (cherche dans .env OU dans les Secrets Hugging Face)
+    api_key = os.getenv("GOOGLE_API_KEY")
+
+    if not api_key:
+        st.error("⚠️ Clé API non trouvée !")
+        st.info("Sur Hugging Face : Vérifiez l'onglet 'Settings > Variables and secrets'.")
+        st.info("En local : Vérifiez que votre fichier .env contient GOOGLE_API_KEY.")
         return None, None
 
     # 2. Initialiser l'LLM et les Embeddings
