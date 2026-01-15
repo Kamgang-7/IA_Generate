@@ -67,7 +67,7 @@ source venv/bin/activate
 Installez ensuite les bibliothèques Python requises :
 
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 ### 4. Configurer l'Environnement
