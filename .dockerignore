@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Streamlit
+.streamlit/
+
+# Index et documents (souvent volumineux)
+faiss_index/
+PDF/
+
+# Git
+.git/
+.github/
+
+# OS
+.DS_Store
+Thumbs.db

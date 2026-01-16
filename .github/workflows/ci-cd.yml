@@ -1,0 +1,63 @@
+name: CI/CD - SmartPDF RAG
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install black isort
+
+      - name: Lint (black + isort)
+        run: |
+          black --check .
+          isort --check-only .
+
+      - name: Smoke import (basic)
+        run: |
+          python -c "import rag_pipeline; import chatbot_app"
+
+  deploy_to_hf:
+    needs: ci
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Push le contenu du repo GitHub vers ton Space HF
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ secrets.HF_SPACE }} # ex: "ton-user/SmartPDF-RAG"
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions"
+
+          git clone https://huggingface.co/spaces/${HF_SPACE} hf_space
+          rsync -av --delete \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude "PDF" \
+            --exclude "faiss_index" \
+            ./ hf_space/
+
+          cd hf_space
+          git add -A
+          git commit -m "Deploy from GitHub: ${GITHUB_SHA}" || echo "No changes to commit"
+          git push https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE} main
