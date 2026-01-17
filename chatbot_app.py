@@ -1,10 +1,11 @@
 import os
+
 import streamlit as st
 
 from rag_pipeline import (
-    initialize_rag_pipeline,
     MANUAL_PROMPT_TEMPLATE,
     PDF_FOLDER_PATH,
+    initialize_rag_pipeline,
 )
 
 st.set_page_config(page_title="SmartPDF - RAG (BM25)", page_icon="📄", layout="wide")
