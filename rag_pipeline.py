@@ -1,18 +1,19 @@
 import os
 import json
 import hashlib
+import re
 import streamlit as st
 from dotenv import load_dotenv
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import FastEmbedEmbeddings
+from rank_bm25 import BM25Okapi
 
 PDF_FOLDER_PATH = "PDF"
-FAISS_INDEX_PATH = "faiss_index"
-MANIFEST_PATH = os.path.join(FAISS_INDEX_PATH, "manifest.json")
+INDEX_PATH = "bm25_index"
+MANIFEST_PATH = os.path.join(INDEX_PATH, "manifest.json")
+STORE_PATH = os.path.join(INDEX_PATH, "store.json")  # chunks + metas
 
 MANUAL_PROMPT_TEMPLATE = """
 Vous êtes un assistant spécialisé dans la réponse aux questions.
@@ -52,24 +53,30 @@ def _compute_pdf_fingerprint(folder: str) -> str:
     return h.hexdigest()
 
 
-def _read_manifest() -> dict:
-    if not os.path.exists(MANIFEST_PATH):
+def _read_json(path: str) -> dict:
+    if not os.path.exists(path):
         return {}
     try:
-        with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}
 
 
-def _write_manifest(data: dict) -> None:
-    os.makedirs(FAISS_INDEX_PATH, exist_ok=True)
-    with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+def _write_json(path: str, data: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def _index_exists() -> bool:
-    return os.path.exists(os.path.join(FAISS_INDEX_PATH, "index.faiss"))
+def _tokenize(text: str) -> list[str]:
+    # Tokenizer simple, léger, robuste
+    text = text.lower()
+    return re.findall(r"[a-zàâçéèêëîïôùûüÿñæœ0-9]+", text)
+
+
+def _store_exists() -> bool:
+    return os.path.exists(STORE_PATH)
 
 
 @st.cache_resource
@@ -78,76 +85,104 @@ def initialize_rag_pipeline(force_reindex: bool = False):
 
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        st.error("⚠️ GOOGLE_API_KEY introuvable (Secrets HF ou fichier .env).")
+        st.error("⚠️ Clé API GOOGLE_API_KEY introuvable (Secrets HF ou fichier .env).")
         return None, None
 
-    # LLM Gemini (uniquement pour répondre, pas pour embeddings)
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash",
-        temperature=0.1,
-        convert_system_message_to_human=True,
-    )
-
-    # Embeddings légers (ONNX) — pas de torch
-    embeddings = FastEmbedEmbeddings(
-        model_name="BAAI/bge-small-en-v1.5"  # petit et performant (anglais)
-    )
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-3-flash-preview",
+            temperature=0.1,
+            convert_system_message_to_human=True,
+        )
+    except Exception as e:
+        st.error(f"Erreur init Gemini: {e}")
+        return None, None
 
     os.makedirs(PDF_FOLDER_PATH, exist_ok=True)
-    os.makedirs(FAISS_INDEX_PATH, exist_ok=True)
+    os.makedirs(INDEX_PATH, exist_ok=True)
 
     pdfs = _list_pdfs(PDF_FOLDER_PATH)
     fingerprint = _compute_pdf_fingerprint(PDF_FOLDER_PATH)
-    manifest = _read_manifest()
+    manifest = _read_json(MANIFEST_PATH)
     last_fp = manifest.get("pdf_fingerprint")
 
-    should_build = force_reindex or (
-        pdfs and (not _index_exists() or last_fp != fingerprint)
-    )
+    should_build = False
+    if force_reindex:
+        should_build = True
+    elif not _store_exists() and pdfs:
+        should_build = True
+    elif _store_exists() and pdfs and last_fp != fingerprint:
+        should_build = True
 
     try:
         if should_build:
-            if not pdfs:
+            st.warning(f"📦 Indexation BM25 en cours : {len(pdfs)} PDF détecté(s)...")
+            with st.spinner("Chargement, découpage, indexation BM25..."):
+                loader = DirectoryLoader(
+                    PDF_FOLDER_PATH,
+                    glob="**/*.pdf",
+                    loader_cls=PyPDFLoader,
+                    show_progress=True,
+                    use_multithreading=True,
+                )
+                documents = loader.load()
+                if not documents:
+                    st.error("Aucun contenu extrait des PDF (PDF vides/protégés ?).")
+                    return None, None
+
+                splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=1000, chunk_overlap=200
+                )
+                chunks = splitter.split_documents(documents)
+
+                texts = [c.page_content for c in chunks]
+                metas = [c.metadata for c in chunks]
+
+                tokenized_corpus = [_tokenize(t) for t in texts]
+                bm25 = BM25Okapi(tokenized_corpus)
+
+                # On sauvegarde les chunks + metas, et on reconstruit bm25 au chargement (rapide)
+                _write_json(STORE_PATH, {"texts": texts, "metas": metas})
+                _write_json(
+                    MANIFEST_PATH,
+                    {"pdf_fingerprint": fingerprint, "pdf_count": len(pdfs)},
+                )
+
+            st.success("✅ Index BM25 mis à jour !")
+
+        else:
+            if not _store_exists():
                 st.info("📄 Ajoute des PDF pour commencer.")
                 return None, None
 
-            st.warning(f"📦 Indexation embeddings (FastEmbed) : {len(pdfs)} PDF...")
-            loader = DirectoryLoader(
-                PDF_FOLDER_PATH,
-                glob="**/*.pdf",
-                loader_cls=PyPDFLoader,
-                show_progress=True,
-                use_multithreading=True,
-            )
-            documents = loader.load()
-            if not documents:
-                st.error("Aucun contenu extrait des PDF.")
-                return None, None
+        # Charger store + reconstruire BM25 (léger et rapide)
+        store = _read_json(STORE_PATH)
+        texts = store.get("texts", [])
+        metas = store.get("metas", [])
+        if not texts:
+            st.info("📄 Ajoute des PDF pour commencer.")
+            return None, None
 
-            # Réduit la taille de l'index (moins de chunks = moins d'espace)
-            splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1200, chunk_overlap=150
-            )
-            chunks = splitter.split_documents(documents)
+        tokenized_corpus = [_tokenize(t) for t in texts]
+        bm25 = BM25Okapi(tokenized_corpus)
 
-            db = FAISS.from_documents(chunks, embeddings)
-            db.save_local(FAISS_INDEX_PATH)
+        # retriever BM25 maison
+        def retriever_fn(query: str, k: int = 4):
+            q_tok = _tokenize(query)
+            scores = bm25.get_scores(q_tok)
+            # top-k indices
+            top_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[
+                :k
+            ]
+            results = []
+            for i in top_idx:
+                results.append(
+                    {"text": texts[i], "meta": metas[i], "score": float(scores[i])}
+                )
+            return results
 
-            _write_manifest(
-                {
-                    "pdf_fingerprint": fingerprint,
-                    "pdf_count": len(pdfs),
-                    "chunk_count": len(chunks),
-                }
-            )
-            st.success("✅ Index FAISS mis à jour !")
-
-        db = FAISS.load_local(
-            FAISS_INDEX_PATH, embeddings, allow_dangerous_deserialization=True
-        )
-        retriever = db.as_retriever(search_kwargs={"k": 4})
-        return llm, retriever
+        return llm, retriever_fn
 
     except Exception as e:
-        st.error(f"Erreur: {e}")
+        st.error(f"Une erreur majeure est survenue : {e}")
         return None, None

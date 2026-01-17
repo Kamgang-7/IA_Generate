@@ -43,6 +43,8 @@ distro==1.9.0
     # via
     #   google-genai
     #   openai
+faiss-cpu==1.12.0
+    # via smartpdf-rag (pyproject.toml)
 filetype==1.2.0
     # via langchain-google-genai
 frozenlist==1.8.0
@@ -358,6 +360,3 @@ yarl==1.22.0
 zstandard==0.25.0
     # via langsmith
 rank-bm25==0.2.2
-fastembed==0.3.6
-onnxruntime==1.18.1
-faiss-cpu==1.8.0.post1
