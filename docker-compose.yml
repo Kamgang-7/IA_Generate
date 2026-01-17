@@ -1,0 +1,12 @@
+services:
+  smartpdf-rag:
+    build: .
+    container_name: smartpdf-rag
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./PDF:/app/PDF
+      - ./faiss_index:/app/faiss_index
+    restart: unless-stopped
