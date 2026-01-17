@@ -22,11 +22,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install black isort
-
-      - name: Lint (black + isort)
+      - name: Lint (isort + black)
         run: |
-          black --check .
           isort --check-only .
+          black --check .  
 
       - name: Smoke import (basic)
         run: |
