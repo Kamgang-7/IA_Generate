@@ -1,0 +1,43 @@
+[project]
+name = "smartpdf-rag"
+version = "0.1.0"
+description = "Chatbot RAG utilisant Google Gemini pour interroger des PDF"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit",
+    "langchain",
+    "langchain-google-genai",
+    "langchain-community",
+    "langchain-text-splitters",
+    "rank-bm25",
+    "faiss-cpu",
+    "python-dotenv",
+    "pypdf",
+    "google-generativeai",
+    "langchain-openai>=0.3.35",
+]
+
+[tool.setuptools]
+# FORCE setuptools à ignorer les dossiers de données
+packages = []
+py-modules = []
+
+[dependency-groups]
+dev = [
+    "black>=24.0.0",
+    "ruff>=0.3.0",
+]
+
+[tool.black]
+line-length = 119
+target-version = ['py311']
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["rag_pipeline"]

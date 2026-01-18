@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.venv/
+venv/
+
+# FAISS local storage (if you add this later)
+PDF/
+bm25_index/
+faiss_index/
+
+# Streamlit
+.streamlit/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
