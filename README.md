@@ -17,15 +17,15 @@ pinned: false
 Ce projet est une application de RAG (Retrieval-Augmented Generation) permettant d'interroger des documents PDF de manière naturelle. Il utilise la puissance de Google Gemini 3 combinée à un moteur de recherche BM25 pour garantir des réponses précises et sourcées.
 
 ## 📌 Sommaire
-1. [🚀 Concept](#-concept)
-2. [✨ Points forts](#-points-forts)
-3. [🛠️ Choix techniques](#️-choix-techniques)
-4. [⚠️ Limitations](#️-limitations)
-5. [⚙️ Installation et lancement](#️-installation-et-lancement)
-6. [🌍 Déploiement sur Hugging Face Spaces](#️-Déploiement-sur-hugging-face-spaces)
-7. [📂 Utilisation](#-utilisation)
-8. [📁 Structure du projet](#-structure-du-projet)
-9. [💡 Fonctionnement de l'indexation](#-fonctionnement-de-lindexation)
+1. [Concept](#-concept)
+2. [Points forts](#-points-forts)
+3. [Choix techniques](#️-choix-techniques)
+4. [Limitations](#️-limitations)
+5. [Installation et lancement](#️-installation-et-lancement)
+6. [Déploiement sur Hugging Face Spaces](#️-Déploiement-sur-hugging-face-spaces)
+7. [Utilisation](#-utilisation)
+8. [Structure du projet](#-structure-du-projet)
+9. [Fonctionnement de l'indexation](#-fonctionnement-de-lindexation)
 10. [Perspectives d'évolution](#-perspectives-dévolution)
 
 ## 🚀 Concept
