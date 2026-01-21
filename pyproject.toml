@@ -15,6 +15,7 @@ dependencies = [
     "pypdf",
     "google-generativeai",
     "langchain-openai>=0.3.35",
+    "langfuse",
 ]
 
 [tool.setuptools]

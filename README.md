@@ -10,28 +10,46 @@ pinned: false
 
 # 📄 SmartPDF-RAG : Assistant Intelligent avec Gemini 3 & BM25
 
+![Python](https://img.shields.io/badge/python-3.11+-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B)
+![Docker](https://img.shields.io/badge/Docker-2496ED)
+
 Ce projet est une application de RAG (Retrieval-Augmented Generation) permettant d'interroger des documents PDF de manière naturelle. Il utilise la puissance de Google Gemini 3 combinée à un moteur de recherche BM25 pour garantir des réponses précises et sourcées.
 
-## ✨ Points Forts
+## 📌 Sommaire
+1. [🚀 Concept](#-concept)
+2. [✨ Points forts](#-points-forts)
+3. [🛠️ Choix techniques](#️-choix-techniques)
+4. [⚠️ Limitations](#️-limitations)
+5. [⚙️ Installation et lancement](#️-installation-et-lancement)
+6. [🌍 Déploiement sur Hugging Face Spaces](#️-Déploiement-sur-hugging-face-spaces)
+7. [📂 Utilisation](#-utilisation)
+8. [📁 Structure du projet](#-structure-du-projet)
+9. [💡 Fonctionnement de l'indexation](#-fonctionnement-de-lindexation)
+10. [Perspectives d'évolution](#-perspectives-dévolution)
 
-- **LLM de Pointe** : Propulsé par `gemini-3-flash-preview` pour des réponses instantanées et précises.
-- **Recherche de Texte (BM25)** : Utilisation de l'algorithme de classement BM25Okapi pour retrouver les passages les plus pertinents basés sur les termes exacts.
-- **Gestionnaire Moderne** : Utilise `uv` pour une installation 10x plus rapide et une gestion des dépendances fiable.
-- **Interface Intuitive** : Développé avec **Streamlit** pour une expérience de chat fluide.
-- **Transparence** : Affichage automatique des sources (extraits de PDF) utilisées pour générer chaque réponse.
-- **Conteneurisation Complète** : Déploiement simplifié via Docker et Docker Compose, incluant un service de linting automatique.
+## 🚀 Concept
+L'application permet d'uploader des documents PDF et de discuter avec eux via une interface de chat. Contrairement à un chatbot classique, celui-ci "lit" vos documents en temps réel pour extraire les passages pertinents avant de générer une réponse, évitant ainsi les hallucinations et garantissant la véracité des informations.
 
-## 🛠️ Stack Technique
+## ✨ Points forts
+- **Réponses Sourcées** : Affichage automatique des extraits de PDF utilisés pour chaque réponse.
+- **Vitesse & Fiabilité** : Utilisation de `uv` pour des builds ultra-rapides.
+- **Architecture Propre** : Code linté (Ruff & Black) et conteneurisé pour un déploiement sans erreurs.
+- **Monitoring Intégré** : Suivi des traces et de la latence via Langfuse cloud.
 
-- **Orchestration** : LangChain
-- **IA (LLM)** : Google Generative AI (Gemini 3)
-- **Indexation** : BM25 (via rank-bm25)
-- **Gestionnaire de paquets** : uv (Astral) pour des builds ultra-rapides
-- **Interface** : Streamlit
-- **Qualité du code** : Ruff & Black (via Docker lint)
-- **Monitoring** : Langfuse (optionnel)
+## 🛠️ Choix techniques
+Nous avons privilégié des outils offrant un compromis optimal entre simplicité et performance :
+- **LLM (IA)** : `gemini-3-flash-preview` pour sa grande fenêtre de contexte et son faible coût.
+- **Moteur de recherche (BM25)** : Choisi à la place d'une base de données vectorielle pour sa précision sur les termes techniques exacts et son absence de coût d'embedding.
+- **Orchestration** : **LangChain** pour la gestion fluide de la mémoire et du flux RAG.
+- **Conteneurisation** : **Docker & Docker Compose** pour garantir un environnement d'exécution identique sur toutes les machines.
 
-## 🚀 Installation et Lancement
+## ⚠️ Limitations
+- **Format** : Seuls les fichiers `.pdf` sont acceptés pour le moment.
+- **Sémantique** : Le moteur BM25 se base sur les mots-clés ; il peut être moins performant qu'un moteur vectoriel sur des questions purement conceptuelles sans termes communs.
+- **Stockage** : L'index est stocké localement (`bm25_index/`) et n'est pas persistant sur une base de données cloud.
+
+## 🚀 Installation et lancement
 
 Ce projet utilise [uv](https://github.com/astral-sh/uv) pour une gestion simplifiée.
 
@@ -46,13 +64,13 @@ LANGFUSE_SECRET_KEY=
 LANGFUSE_HOST="https://cloud.langfuse.com"
 ```
 
-### 2. Lancement avec Docker (Recommandé)
+### 2. Lancement avec Docker (recommandé)
 ```bash
 docker-compose up --build
 ```
 L'application sera disponible sur http://localhost:8501.
 
-### 3. Installation Locale avec uv
+### 3. Installation locale avec uv
 Si vous préférez lancer le projet nativement :
 ```bash
 uv sync
@@ -69,12 +87,12 @@ Ce projet est compatible avec Hugging Face Spaces (SDK Docker).
 
 ## 📂 Utilisation
 
-1. Placez vos fichiers PDF dans le dossier PDF/.
+1. Placez vos fichiers PDF dans le dossier `PDF/`.
 2. Lancez l'application via uv :
 ```bash
 uv run streamlit run chatbot_app.py
 ```
-3. Posez vos questions ! L'application créera automatiquement un dossier faiss_index/ lors de la première analyse pour accélérer les sessions futures.
+3. Posez vos questions ! L'application créera automatiquement un dossier `bm25_index/` pour stocker les données traitées.
 
 ## 📁 Structure du projet
 ```Plaintext
@@ -88,12 +106,16 @@ uv run streamlit run chatbot_app.py
 └── pyproject.toml       # Dépendances et configuration des outils (Ruff, Black)
 ```
 
-## 💡 Fonctionnement de l'Indexation
+## 💡 Fonctionnement de l'indexation
 
-L'application surveille automatiquement le dossier PDF/. Un "fingerprint" (empreinte numérique) est calculé à chaque lancement :
+L'application surveille automatiquement le dossier PDF/. Un "fingerprint" (empreinte numérique MD5) est calculé à chaque lancement :
 
-- Si de nouveaux fichiers sont ajoutés ou modifiés, l'index BM25 est reconstruit.
-- Sinon, l'index est chargé depuis le disque pour un démarrage instantané.
+- Un calcul est fait sur l'ensemble des fichiers du dossier `PDF/`.
+- Si le fingerprint change (ajout/suppression), l'index se reconstruit automatiquement.
+- Sinon, l'index est chargé instantanément depuis le dossier `bm25_index/`.
 
-## Développements futurs
-à venir ...
+## Perspective d'évolution
+- Intégration d'un mode hybride (BM25 + VectorDB type FAISS).
+- Support des fichiers Word/Markdown.
+- Gestion de l'OCR pour les PDF scannés.
+- intégration d'un dashboard de coût en temps réel (via Langfuse API).
