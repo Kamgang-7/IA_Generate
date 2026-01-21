@@ -19,7 +19,7 @@ MANIFEST_PATH = os.path.join(INDEX_PATH, "manifest.json")
 STORE_PATH = os.path.join(INDEX_PATH, "store.json")  # chunks + metas
 
 # Template de réponse pour le LLM (Gemini)
-# On lui demande d'être honnête et de citer uniquement le contexte fourni.  
+# On lui demande d'être honnête et de citer uniquement le contexte fourni.
 MANUAL_PROMPT_TEMPLATE = """
 Vous êtes un assistant spécialisé dans la réponse aux questions.
 Utilisez uniquement les morceaux de contexte suivants pour répondre à la question.
@@ -35,6 +35,7 @@ Question:
 
 Réponse utile:
 """
+
 
 # =========================================================
 # FONCTIONS UTILITAIRES DE GESTION DE FICHIERS
@@ -96,16 +97,18 @@ def _store_exists() -> bool:
     """Vérifie si des données ont déjà été indexées."""
     return os.path.exists(STORE_PATH)
 
+
 # =========================================================
 # INITIALISATION DU PIPELINE RAG
 # =========================================================
 
-# @st.cache_resource permet de garder le pipeline en mémoire vive pour ne pas 
+
+# @st.cache_resource permet de garder le pipeline en mémoire vive pour ne pas
 # le recharger à chaque clic dans Streamlit.
 @st.cache_resource(show_spinner=False)
 def initialize_rag_pipeline(force_reindex: bool = False):
-    load_dotenv() # Chargement du fichier .env
-    
+    load_dotenv()  # Chargement du fichier .env
+
     # 1. Initialisation du LLM Gemini
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
@@ -121,7 +124,7 @@ def initialize_rag_pipeline(force_reindex: bool = False):
     except Exception as e:
         st.error(f"Erreur init Gemini: {e}")
         return None, None
-    
+
     # 2. Vérification de la nécessité d'indexer
     os.makedirs(PDF_FOLDER_PATH, exist_ok=True)
     os.makedirs(INDEX_PATH, exist_ok=True)
@@ -130,7 +133,7 @@ def initialize_rag_pipeline(force_reindex: bool = False):
     fingerprint = _compute_pdf_fingerprint(PDF_FOLDER_PATH)
     manifest = _read_json(MANIFEST_PATH)
     last_fp = manifest.get("pdf_fingerprint")
-    
+
     # On indexe si : force_reindex est True, ou si pas d'index, ou si les fichiers ont changé
     should_build = False
     if force_reindex:
@@ -145,7 +148,7 @@ def initialize_rag_pipeline(force_reindex: bool = False):
             # --- PHASE D'INDEXATION ---
             st.warning(f"📦 Indexation BM25 en cours : {len(pdfs)} PDF détecté(s)...")
             with st.spinner("Chargement, découpage, indexation BM25..."):
-                
+
                 # Chargement des PDF depuis le dossier
                 loader = DirectoryLoader(
                     PDF_FOLDER_PATH,
@@ -158,7 +161,7 @@ def initialize_rag_pipeline(force_reindex: bool = False):
                 if not documents:
                     st.error("Aucun contenu extrait des PDF (PDF vides/protégés ?).")
                     return None, None
-                
+
                 # Découpage du texte en morceaux (chunks) de 1000 caractères
                 # L'overlap de 200 permet de garder le contexte entre deux morceaux.
                 splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
@@ -202,13 +205,13 @@ def initialize_rag_pipeline(force_reindex: bool = False):
         # --- DEFINITION DU RETRIEVER ---
         def retriever_fn(query: str, k: int = 4):
             """
-            Fonction de recherche : 
-            Prend une question, la tokenize, et calcule les scores BM25 
+            Fonction de recherche :
+            Prend une question, la tokenize, et calcule les scores BM25
             par rapport à tous les morceaux de texte.
             """
             q_tok = _tokenize(query)
             scores = bm25.get_scores(q_tok)
-            
+
             # Récupération des indices des 'k' meilleurs résultats
             top_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
             results = []

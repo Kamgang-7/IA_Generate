@@ -5,7 +5,7 @@ import streamlit as st
 # =========================================================
 # 1. INTEGRATION LANGFUSE (Monitoring & Tracing)
 # =========================================================
-# On tente d'importer le CallbackHandler pour LangChain. 
+# On tente d'importer le CallbackHandler pour LangChain.
 # Si le module n'est pas installé, l'app ne crash pas grâce au try/except.
 try:
     from langfuse.langchain import CallbackHandler
@@ -62,7 +62,7 @@ config = {"callbacks": [langfuse_handler]} if langfuse_handler else {}
 # =========================================================
 # 4. GESTION DE L'ETAT (Session State)
 # =========================================================
-# Streamlit recharge tout le script à chaque interaction. 
+# Streamlit recharge tout le script à chaque interaction.
 # On utilise st.session_state pour garder les données en mémoire.
 
 # Initialisation de l'historique des messages
@@ -93,12 +93,13 @@ def build_index_now():
     initialize_rag_pipeline(force_reindex=True)
     st.session_state.index_needed = False
 
+
 # =========================================================
 # 6. BARRE LATÉRALE (Sidebar)
 # =========================================================
 with st.sidebar:
     st.header("1) Charger des documents PDF")
-    os.makedirs(PDF_FOLDER_PATH, exist_ok=True) # Crée le dossier PDF s'il n'existe pas
+    os.makedirs(PDF_FOLDER_PATH, exist_ok=True)  # Crée le dossier PDF s'il n'existe pas
 
     # Widget de téléchargement multiple
     uploaded_files = st.file_uploader("Chargez un ou plusieurs PDFs", type="pdf", accept_multiple_files=True)
@@ -112,7 +113,7 @@ with st.sidebar:
                 with open(file_path, "wb") as file:
                     file.write(f.getbuffer())
                 files_saved = True
-        
+
         if files_saved:
             st.session_state.index_needed = True
             st.session_state.last_upload_msg = f"{len(uploaded_files)} fichier(s) prêt(s) à l'indexation."
@@ -121,7 +122,7 @@ with st.sidebar:
     if st.session_state.index_needed and "last_upload_msg" in st.session_state:
         st.success(st.session_state.last_upload_msg)
         st.warning("⚠️ Cliquez sur le bouton ci-dessous pour mettre à jour l'IA.")
-    
+
     st.divider()
 
     st.header("2) Recréer l'index")
@@ -154,14 +155,16 @@ st.title("SmartPDF - Assistant RAG Intelligent 🤖")
 
 # Guide rapide pour l'utilisateur
 with st.expander("Guide de démarrage rapide", expanded=True):
-    st.markdown("""
+    st.markdown(
+        """
     Bienvenue sur **SmartPDF** ! Pour poser des questions à vos documents, suivez ces étapes :
     1.  **Charger vos documents** : Utilisez le bouton dans la barre latérale pour uploader vos PDF.
     2.  **Indexer les fichiers** : Cliquez sur **'Re-générer l'index'**.
     3.  **Discutez** : Posez votre question dans la barre de chat en bas de l'écran. 
     
     *Note : Si vous oubliez d'indexer, le système le fera automatiquement lors de votre première question.*
-    """)
+    """
+    )
 
 # Initialisation silencieuse du pipeline (charge l'index existant si disponible)
 llm, retriever = initialize_rag_pipeline()
@@ -219,7 +222,7 @@ if prompt:
         with st.spinner("Rédaction de la réponse..."):
             combined_context = f"[HISTORIQUE]\n{history_str}\n\n[DOCUMENTS]\n{doc_context}"
             final_prompt = MANUAL_PROMPT_TEMPLATE.format(context=combined_context, question=prompt)
-            
+
             # Appel final au LLM (Gemini)
             response = llm.invoke(final_prompt, config=config)
             answer = _extract_text(response.content)
